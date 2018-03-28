@@ -1,0 +1,12 @@
+{
+  "name": "chino-im-client-js",
+  "version": "0.0.0",
+  "description": "ChinoIM-client-js",
+  "main": "app.js",
+  "author": {
+    "name": "jxpxx"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  }
+}

@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChinoIM.Server", "ChinoIM.Server\ChinoIM.Server.csproj", "{2E6164DA-A864-4064-B5D6-A1FCF08AC1EF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChinoIM.Common", "ChinoIM.Common\ChinoIM.Common.csproj", "{E39A13B1-B13E-45DD-BEBC-50049549D725}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChinoIM.Client", "ChinoIM.Client\ChinoIM.Client.csproj", "{05CEBFE4-1CF8-4FCF-BE16-8786436B8608}"
+EndProject
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "ChinoIM-client-js", "ChinoIM-client-js\ChinoIM-client-js.njsproj", "{48CF7B9B-1C04-43FB-9AF2-9DF059932458}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E6164DA-A864-4064-B5D6-A1FCF08AC1EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E6164DA-A864-4064-B5D6-A1FCF08AC1EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E6164DA-A864-4064-B5D6-A1FCF08AC1EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E6164DA-A864-4064-B5D6-A1FCF08AC1EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E39A13B1-B13E-45DD-BEBC-50049549D725}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E39A13B1-B13E-45DD-BEBC-50049549D725}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E39A13B1-B13E-45DD-BEBC-50049549D725}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E39A13B1-B13E-45DD-BEBC-50049549D725}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05CEBFE4-1CF8-4FCF-BE16-8786436B8608}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05CEBFE4-1CF8-4FCF-BE16-8786436B8608}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05CEBFE4-1CF8-4FCF-BE16-8786436B8608}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05CEBFE4-1CF8-4FCF-BE16-8786436B8608}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48CF7B9B-1C04-43FB-9AF2-9DF059932458}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48CF7B9B-1C04-43FB-9AF2-9DF059932458}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48CF7B9B-1C04-43FB-9AF2-9DF059932458}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48CF7B9B-1C04-43FB-9AF2-9DF059932458}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5283A2A4-A9CA-4A25-A08F-5008809BA2B5}
+	EndGlobalSection
+EndGlobal
