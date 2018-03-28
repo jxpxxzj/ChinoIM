@@ -9,7 +9,7 @@ namespace ChinoIM.Client
     {
         static void Main(string[] args)
         {
-            var client = new ChinoClient();
+            var client = new CocoaClient();
             client.Receive += Client_Receive;
             while(true)
             {

@@ -1,5 +1,5 @@
-var ChinoClient = require('./ChinoClient');
-var client = new ChinoClient();
+var CocoaClient = require('./CocoaClient');
+var client = new CocoaClient();
 
 client.events.on('receive', (request) => {
     // do something

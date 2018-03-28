@@ -29,7 +29,7 @@ function GetRequestToken(request) {
     return BcryptHash(str);
 }
 
-class ChinoClient {
+class CocoaClient {
     constructor(serverV4 = ServerAddressV4, serverV6 = ServerAddressV6, port = Port) {
         this.socket = new net.Socket();
         this.lastReceiveTime = 0;
@@ -147,4 +147,4 @@ class ChinoClient {
     }
 }
 
-module.exports = ChinoClient;
+module.exports = CocoaClient;

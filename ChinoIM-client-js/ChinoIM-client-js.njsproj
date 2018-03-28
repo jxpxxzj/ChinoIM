@@ -30,7 +30,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test.js" />
-    <Content Include="ChinoClient.js">
+    <Content Include="CocoaClient.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="package.json" />

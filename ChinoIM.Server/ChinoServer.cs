@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -31,6 +32,10 @@ namespace ChinoIM.Server
         private List<ChinoWorker> workers = new List<ChinoWorker>();
         private ILogger logger = LogManager.CreateLogger<ChinoServer>();
 
+        // private static FileSystemWatcher fsw;
+        private Stopwatch timer = new Stopwatch();
+        // internal static ConfigManager Config;
+
         public ChinoServer() : this(IPAddressV4, IPAddressV6, Port)
         {
 
@@ -38,6 +43,7 @@ namespace ChinoIM.Server
 
         public ChinoServer(IPAddress ipAddressV4, IPAddress ipAddressV6, int port)
         {
+            timer.Start();
             for (var i = 0; i < WorkerCount; i++)
             {
                 workers.Add(new ChinoWorker(i));

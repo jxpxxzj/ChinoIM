@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Client
 {
-    public class ChinoClient
+    public class CocoaClient
     {
         private static int timeoutSeconds = 90;
         public static long CurrentTime
@@ -27,7 +27,7 @@ namespace ChinoIM.Client
             }
         }
 
-        private ILogger logger = LogManager.CreateLogger<ChinoClient>();
+        private ILogger logger = LogManager.CreateLogger<CocoaClient>();
 
         public static IPAddress ServerAddressV6 = IPAddress.IPv6Loopback;
         public static IPAddress ServerAddressV4 = IPAddress.Loopback;
@@ -56,7 +56,7 @@ namespace ChinoIM.Client
             Disconnected?.Invoke(this, EventArgs.Empty);
         }
 
-        public ChinoClient(IPAddress serverV4, IPAddress serverV6, int port)
+        public CocoaClient(IPAddress serverV4, IPAddress serverV6, int port)
         {
             Task.Run(async () =>
             {
@@ -66,7 +66,7 @@ namespace ChinoIM.Client
             });
         }
 
-        public ChinoClient() : this(ServerAddressV4, ServerAddressV6, Port) { }
+        public CocoaClient() : this(ServerAddressV4, ServerAddressV6, Port) { }
 
 
         public async Task Connect(IPAddress serverV4, IPAddress serverV6, int port)
