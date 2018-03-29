@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Runtime.Serialization;
 
 namespace ChinoIM.Common.Helpers
 {
-    public class JsonFormatter : IFormatter, IFormatProvider
+    public class JsonFormatter<T> : IFormatter, IFormatProvider
     {
         public SerializationBinder Binder { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public StreamingContext Context { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -12,9 +13,12 @@ namespace ChinoIM.Common.Helpers
 
         public object Deserialize(Stream serializationStream)
         {
-            var reader = new StreamReader(serializationStream);
-            var str = reader.ReadToEnd();
-            return JsonSerializer.Deserialize<object>(str);
+            serializationStream.Seek(0, SeekOrigin.Begin);
+            using (var reader = new StreamReader(serializationStream))
+            {
+                var str = reader.ReadToEnd();
+                return JsonSerializer.Deserialize<T>(str);
+            }
         }
 
         public object GetFormat(Type formatType)
@@ -27,6 +31,7 @@ namespace ChinoIM.Common.Helpers
             var writer = new StreamWriter(serializationStream);
             var json = JsonSerializer.Serialize(graph);
             writer.Write(json);
+            writer.Flush();
         }
     }
 }

@@ -21,7 +21,7 @@ namespace ChinoIM.Client
 
         private bool isAuth;
 
-        private Connection connection;
+        private Connection<Request> connection;
 
         public event EventHandler Connected;
         public event EventHandler<Request> Receive;
@@ -81,7 +81,8 @@ namespace ChinoIM.Client
             if (server != null && tcpClient != null)
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
-                connection = new Connection(tcpClient);
+
+                connection = new Connection<Request>(tcpClient, new JsonFormatter<Request>());
                 connection.Received += Connection_Receive;
                 connection.Disconnected += Connection_Disconnected;
                 OnConnected();
@@ -93,10 +94,9 @@ namespace ChinoIM.Client
             OnDisconnected(e);
         }
 
-        private void Connection_Receive(object sender, string e)
+        private void Connection_Receive(object sender, Request e)
         {
-            var request = JsonSerializer.Deserialize<Request>(e);
-            handleIncoming(request);
+            handleIncoming(e);
         }
 
         private async void mainLoop()
@@ -163,9 +163,9 @@ namespace ChinoIM.Client
 
             var token = request.GetToken();
             request.Token = token;
-            request.SendTime = Connection.CurrentTime;
+            request.SendTime = TimeService.CurrentTime;
 
-            connection.SendRequest(JsonSerializer.Serialize(request));
+            connection.SendRequest(request);
         }
     }
 }

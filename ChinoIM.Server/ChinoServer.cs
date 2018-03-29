@@ -17,16 +17,6 @@ namespace ChinoIM.Server
         public static IPAddress IPAddressV6 = IPAddress.IPv6Any;
         public static int WorkerCount = 4;
 
-        public static long CurrentTime
-        {
-            get
-            {
-                var unixTime = new DateTime(1970, 1, 1);
-                var ts = DateTime.Now - unixTime;
-                return (int)ts.TotalSeconds;
-            }
-        }
-
         private TcpListener listenerV4;
         private TcpListener listenerV6;
         private List<ChinoWorker> workers = new List<ChinoWorker>();
@@ -117,7 +107,7 @@ namespace ChinoIM.Server
             logger.LogInformation("Main loop is running...");
             while(true)
             {
-                long current = CurrentTime;
+                long current = TimeService.CurrentTime;
                 foreach (var worker in workers)
                 {
                     Task.Run(() => worker.DoWork());

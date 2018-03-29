@@ -34,7 +34,15 @@ namespace ChinoIM.Server
             var client = ClientManager.GetClientForProcessing();
             if (client != null)
             {
-                await client.Check(this);
+                try
+                {
+                    await client.Check(this);
+                }
+                catch
+                {
+                    throw;
+                }
+                
                 ClientManager.AddClientForProcessing(client);
                 return;
             }

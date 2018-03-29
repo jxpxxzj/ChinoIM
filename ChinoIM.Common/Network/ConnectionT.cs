@@ -37,7 +37,7 @@ namespace ChinoIM.Common.Network
             {
                 var writer = new StreamWriter(memStream);
                 writer.Write(request);
-
+                writer.Flush();
                 var obj = (T)Formatter.Deserialize(memStream);
                 Received?.Invoke(this, obj);
             }           
@@ -50,9 +50,12 @@ namespace ChinoIM.Common.Network
                 using (var memStream = new MemoryStream())
                 {
                     Formatter.Serialize(memStream, obj);
-                    var reader = new StreamReader(memStream);
-                    var str = reader.ReadToEnd();
-                    SendRequest(str);
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    using (var reader = new StreamReader(memStream))
+                    {
+                        var str = reader.ReadToEnd();
+                        SendRequest(str);
+                    }
                 }
             }
         }
