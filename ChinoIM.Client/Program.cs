@@ -1,6 +1,6 @@
 ﻿using ChinoIM.Common.Enums;
 using ChinoIM.Common.Helpers;
-using ChinoIM.Common.Requests;
+using ChinoIM.Common.Network;
 using System;
 
 namespace ChinoIM.Client

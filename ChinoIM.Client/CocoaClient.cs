@@ -1,14 +1,11 @@
 ﻿using ChinoIM.Common.Enums;
 using ChinoIM.Common.Helpers;
-using ChinoIM.Common.Requests;
+using ChinoIM.Common.Network;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,33 +13,19 @@ namespace ChinoIM.Client
 {
     public class CocoaClient
     {
-        private static int timeoutSeconds = 90;
-        public static long CurrentTime
-        {
-            get
-            {
-                var unixTime = new DateTime(1970, 1, 1);
-                var ts = DateTime.Now - unixTime;
-                return (int)ts.TotalSeconds;
-            }
-        }
-
         private ILogger logger = LogManager.CreateLogger<CocoaClient>();
 
         public static IPAddress ServerAddressV6 = IPAddress.IPv6Loopback;
         public static IPAddress ServerAddressV4 = IPAddress.Loopback;
         public static int Port = 6163;
 
-        private TcpClient tcpClient;
-
-        private bool isConnected;
         private bool isAuth;
-        private long lastReceiveTime;
-        private ConcurrentQueue<Request> sendQueue = new ConcurrentQueue<Request>();
+
+        private NetConnection connection;
 
         public event EventHandler Connected;
         public event EventHandler<Request> Receive;
-        public event EventHandler Disconnected;
+        public event EventHandler<string> Disconnected;
         protected virtual void OnConnected()
         {
             Connected?.Invoke(this, EventArgs.Empty);
@@ -51,9 +34,9 @@ namespace ChinoIM.Client
         {
             Receive?.Invoke(this, e);
         }
-        protected virtual void OnDisconnected()
+        protected virtual void OnDisconnected(string reason)
         {
-            Disconnected?.Invoke(this, EventArgs.Empty);
+            Disconnected?.Invoke(this, reason);
         }
 
         public CocoaClient(IPAddress serverV4, IPAddress serverV6, int port)
@@ -68,10 +51,16 @@ namespace ChinoIM.Client
 
         public CocoaClient() : this(ServerAddressV4, ServerAddressV6, Port) { }
 
+        ~CocoaClient()
+        {
+            connection.Disconnect();
+        }
+
 
         public async Task Connect(IPAddress serverV4, IPAddress serverV6, int port)
         {
             IPAddress server = null;
+            TcpClient tcpClient = null;
             if (NetworkUtil.IsSupportIPv6)
             {
                 server = serverV6;
@@ -89,120 +78,43 @@ namespace ChinoIM.Client
                 throw new SocketException();
             }
 
-            if (server != null)
+            if (server != null && tcpClient != null)
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
-                isConnected = true;
-                lastReceiveTime = CurrentTime;
+                connection = new NetConnection(tcpClient);
+                connection.Received += Connection_Receive;
+                connection.Disconnected += Connection_Disconnected;
+                OnConnected();
             }
         }
 
-        public void Disconnect(string reason)
+        private void Connection_Disconnected(object sender, string e)
         {
-            logger.LogWarning("Disconnected for " + reason);
-            disconnect();
+            OnDisconnected(e);
+        }
+
+        private void Connection_Receive(object sender, string e)
+        {
+            var request = JsonSerializer.Deserialize<Request>(e);
+            handleIncoming(request);
         }
 
         private async void mainLoop()
         {
             while (true)
             {
-                long current = CurrentTime;
-                long timeout = current - lastReceiveTime;
-                if (timeout > timeoutSeconds)
-                {
-                    Disconnect("Timed out");
-                    return;
-                }
-                if (!tcpClient.Connected)
-                {
-                    Disconnect("Disconnect");
-                }
-                await receive();
-                await send();
+                await connection.Update();
                 Thread.Sleep(200);
-            }
-        }
-
-        public void Disconnect()
-        {
-            logger.LogInformation("Disconnected");
-            disconnect();
-        }
-
-        private void disconnect()
-        {
-            sendRequest(RequestType.User_Logout, null);
-            isConnected = false;
-            tcpClient.Close();
-        }
-
-        private async Task receive()
-        {
-            if (!isConnected)
-            {
-                return;
-            }
-
-            var stream = tcpClient.GetStream();
-            var str = "";
-            if (stream.CanRead)
-            {
-                byte[] buffer = new byte[4096];
-                var builder = new StringBuilder();
-                int toRead = 0;
-                while (stream.DataAvailable)
-                {
-                    toRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    builder.AppendFormat("{0}", Encoding.UTF8.GetString(buffer, 0, toRead));
-                }
-
-                str = builder.ToString().Trim();
-                if (string.IsNullOrEmpty(str))
-                {
-                    return;
-                }
-                logger.LogInformation("Receive: {0}", str);
-                var data = JsonSerializer.Deserialize<Request>(str);
-                if (data != null)
-                {
-                    handleIncoming(data);
-                }
-            }
-        }
-
-        private async Task send()
-        {
-            if (!isConnected)
-            {
-                return;
-            }
-
-            if (sendQueue.TryDequeue(out var request))
-            {
-                request.SendTime = CurrentTime;
-                var token = request.GetToken();
-                request.Token = token;
-                var json = JsonSerializer.Serialize(request).Trim();
-
-                if (!string.IsNullOrEmpty(json))
-                {
-                    var stream = tcpClient.GetStream();
-                    var writer = new StreamWriter(stream);
-                    await writer.WriteAsync(json + "\n");
-                    await writer.FlushAsync();
-                }
             }
         }
 
         private void pong()
         {
-            sendRequest(RequestType.Pong, null);
+            sendRequest(RequestType.Pong);
         }
 
         private void handleIncoming(Request request)
         {
-            lastReceiveTime = CurrentTime;
             if (!isAuth && request.Type != RequestType.User_LoginResult)
             {
                 logger.LogWarning("Client not login, ignore request");
@@ -236,9 +148,9 @@ namespace ChinoIM.Client
             }
         }
 
-        private void sendRequest(RequestType type, IDictionary<string, object> payload)
+        private void sendRequest(RequestType type, IDictionary<string, object> payload = null)
         {
-            if ((!isAuth || !isConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
+            if ((!isAuth || !connection.isConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
             {
                 return;
             }
@@ -248,7 +160,12 @@ namespace ChinoIM.Client
                 Payload = payload,
                 Type = type
             };
-            sendQueue.Enqueue(request);
+
+            var token = request.GetToken();
+            request.Token = token;
+            request.SendTime = NetConnection.CurrentTime;
+
+            connection.SendRequest(JsonSerializer.Serialize(request));
         }
     }
 }

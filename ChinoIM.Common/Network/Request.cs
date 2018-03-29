@@ -3,7 +3,7 @@ using ChinoIM.Common.Helpers;
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 
-namespace ChinoIM.Common.Requests
+namespace ChinoIM.Common.Network
 {
     public class Request
     {
