@@ -21,7 +21,7 @@ namespace ChinoIM.Client
 
         private bool isAuth;
 
-        private NetConnection connection;
+        private Connection connection;
 
         public event EventHandler Connected;
         public event EventHandler<Request> Receive;
@@ -81,7 +81,7 @@ namespace ChinoIM.Client
             if (server != null && tcpClient != null)
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
-                connection = new NetConnection(tcpClient);
+                connection = new Connection(tcpClient);
                 connection.Received += Connection_Receive;
                 connection.Disconnected += Connection_Disconnected;
                 OnConnected();
@@ -163,7 +163,7 @@ namespace ChinoIM.Client
 
             var token = request.GetToken();
             request.Token = token;
-            request.SendTime = NetConnection.CurrentTime;
+            request.SendTime = Connection.CurrentTime;
 
             connection.SendRequest(JsonSerializer.Serialize(request));
         }

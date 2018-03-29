@@ -10,44 +10,34 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Common.Network
 {
-    public class NetConnection
+    public class Connection
     {
 
-        public NetConnection(TcpClient tcpClient)
+        public Connection(TcpClient tcpClient)
         {
             init(tcpClient, TimeoutLimit, Guid.NewGuid());
         }
-        public NetConnection(TcpClient tcpClient, int timeoutSeconds)
+        public Connection(TcpClient tcpClient, int timeoutSeconds)
         {
             init(tcpClient, timeoutSeconds, Guid.NewGuid());
         }
-        public NetConnection(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
+        public Connection(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
         {
             init(tcpClient, timeoutSeconds, sessionId);
         }
-        ~NetConnection()
+        ~Connection()
         {
             Disconnect("Deconstruction");
         }
 
-        private void init(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
+        protected virtual void init(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
         {
             TcpClient = tcpClient;
             TimeoutLimit = timeoutSeconds;
-            lastReceiveTime = CurrentTime;
+            lastReceiveTime = TimeService.CurrentTime;
             SessionID = sessionId;
             EndPoint = (IPEndPoint)TcpClient.Client.RemoteEndPoint;
-            logger = LogManager.CreateLogger<NetConnection>(ToString());
-        }
-
-        private static DateTime unixTime = new DateTime(1970, 1, 1);
-        public static long CurrentTime
-        {
-            get
-            {
-                var ts = DateTime.Now - unixTime;
-                return (long)ts.TotalSeconds;
-            }
+            logger = LogManager.CreateLogger<Connection>(ToString());
         }
 
         private ILogger logger;
@@ -66,15 +56,15 @@ namespace ChinoIM.Common.Network
         private long lastReceiveTime = 0;
         private ConcurrentQueue<string> sendQueue = new ConcurrentQueue<string>();
 
-        public event EventHandler<string> BeforeSend;
-        public event EventHandler<string> AfterSend;
-        public event EventHandler<NetworkStream> BeforeReceive;
-        public event EventHandler<string> AfterReceive;
-        public event EventHandler<string> Received;
-        public event EventHandler<string> Disconnected;
-        public event EventHandler BeforeUpdate;
-        public event EventHandler MidUpdate;
-        public event EventHandler AfterUpdate;
+        public virtual event EventHandler<string> BeforeSend;
+        public virtual event EventHandler<string> AfterSend;
+        public virtual event EventHandler<NetworkStream> BeforeReceive;
+        public virtual event EventHandler<string> AfterReceive;
+        public virtual event EventHandler<string> Received;
+        public virtual event EventHandler<string> Disconnected;
+        public virtual event EventHandler BeforeUpdate;
+        public virtual event EventHandler MidUpdate;
+        public virtual event EventHandler AfterUpdate;
 
         protected virtual void OnBeforeUpdate()
         {
@@ -135,7 +125,7 @@ namespace ChinoIM.Common.Network
 
         private void checkTimeout()
         {
-            long current = CurrentTime;
+            long current = TimeService.CurrentTime;
             long timeout = current - lastReceiveTime;
             LastReceiveTimeAgo = timeout;
             if (timeout > TimeoutLimit)
@@ -183,7 +173,7 @@ namespace ChinoIM.Common.Network
                 if (!string.IsNullOrEmpty(str))
                 {
                     OnAfterReceive(str);
-                    lastReceiveTime = CurrentTime;
+                    lastReceiveTime = TimeService.CurrentTime;
                     logger.LogInformation("Receive: {0}", str);
                     OnReceived(str);
                 }

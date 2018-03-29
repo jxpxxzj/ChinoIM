@@ -2,10 +2,11 @@
 using ChinoIM.Common.Helpers;
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace ChinoIM.Common.Network
 {
-    public class Request
+    public class Request : ISerializable
     {
         [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
         public RequestType Type { get; set; }
@@ -26,6 +27,17 @@ namespace ChinoIM.Common.Network
         public bool Verify()
         {
             return CryptoHelper.BCryptVerify(getPayloadJson() + SendTime, Token);
+        }
+
+        public void AddStamp()
+        {
+            Token = GetToken();
+            SendTime = TimeService.CurrentTime;
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            
         }
 
         public object this[string key]
