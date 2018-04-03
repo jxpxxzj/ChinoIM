@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Common.Network
 {
-    public class Connection
+    public class Connection : IDisposable
     {
 
         public Connection(TcpClient tcpClient)
@@ -24,10 +24,6 @@ namespace ChinoIM.Common.Network
         public Connection(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
         {
             init(tcpClient, timeoutSeconds, sessionId);
-        }
-        ~Connection()
-        {
-            Disconnect("Deconstruction");
         }
 
         protected virtual void init(TcpClient tcpClient, int timeoutSeconds, Guid sessionId)
@@ -47,7 +43,7 @@ namespace ChinoIM.Common.Network
         public Guid SessionID { get; set; }
         public IPEndPoint EndPoint { get; protected set; }
 
-        public bool isConnected
+        public bool IsConnected
         {
             get => TcpClient.Connected;
         }
@@ -107,11 +103,13 @@ namespace ChinoIM.Common.Network
             Disconnected?.Invoke(this, reason);
         }
 
-        public async Task Update()
+        public async Task<bool> Update()
         {
-            if (!isConnected)
+            if (!IsConnected)
             {
                 Disconnect("Disconnect");
+                Dispose();
+                return false;
             }
 
             checkTimeout();
@@ -121,6 +119,7 @@ namespace ChinoIM.Common.Network
             OnMidUpdate();
             await send();
             OnAfterUpdate();
+            return true;
         }
 
         private void checkTimeout()
@@ -137,7 +136,7 @@ namespace ChinoIM.Common.Network
 
         private async Task receive()
         {
-            if (!isConnected)
+            if (!IsConnected)
             {
                 return;
             }
@@ -162,11 +161,11 @@ namespace ChinoIM.Common.Network
                         toRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                         builder.Append(Encoding.UTF8.GetString(buffer, 0, toRead));
                     }
-                    
+
                 }
                 catch
                 {
-                    Disconnect("Disconnect");
+                    return;
                 }
 
                 str = builder.ToString().Trim();
@@ -182,7 +181,7 @@ namespace ChinoIM.Common.Network
 
         private async Task send()
         {
-            if (!isConnected)
+            if (!IsConnected)
             {
                 return;
             }
@@ -206,7 +205,7 @@ namespace ChinoIM.Common.Network
                         }
                         catch
                         {
-                            Disconnect("Disconnect");
+                            return;
                         }
                     }
                 }
@@ -214,7 +213,7 @@ namespace ChinoIM.Common.Network
         }
         public void SendRequest(string request)
         {
-            if (!isConnected)
+            if (!IsConnected)
             {
                 return;
             }
@@ -248,5 +247,34 @@ namespace ChinoIM.Common.Network
             var baseStr = string.Format("{0}[{1} @ {2}:{3}]", prefix, SessionID, EndPoint.Address, EndPoint.Port);
             return baseStr;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // 要检测冗余调用
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    TcpClient.Dispose();
+                }
+                sendQueue.Clear();
+                sendQueue = null;
+                disposedValue = true;
+            }
+        }
+
+        ~Connection()
+        {
+            logger.LogWarning("Connection disposed.");
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }

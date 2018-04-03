@@ -1,5 +1,6 @@
 ﻿using ChinoIM.Common.Helpers;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,13 +35,23 @@ namespace ChinoIM.Server
             var client = ClientManager.GetClientForProcessing();
             if (client != null)
             {
+                bool success = true;
+                string msg = string.Empty;
                 try
                 {
-                    await client.Check(this);
+                    success = await client.Check(this);
                 }
-                catch
+                catch (Exception e)
                 {
-                    throw;
+                    success = false;
+                    msg = string.Format("{0}, removing client", e.ToString());
+                }
+
+                if (!success)
+                {
+                    logger.LogError(msg);
+                    ClientManager.UnregisterClient(client);
+                    return;
                 }
                 
                 ClientManager.AddClientForProcessing(client);

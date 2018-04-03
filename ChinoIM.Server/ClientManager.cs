@@ -68,7 +68,7 @@ namespace ChinoIM.Server
         {
             lock (lockClientList)
             {
-                c.TcpClient.Close();
+                // c.Connection.Disconnect();
                 clients.Remove(c);
                 logger.LogInformation("Client unregistered");
             }

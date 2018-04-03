@@ -5,144 +5,46 @@ using ChinoIM.Common.Network;
 using ChinoIM.Server.Services;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ChinoIM.Server
 {
     public class Client
     {
-        public static int TimeoutSeconds = 90;
         public User User { get; set; }
 
-        public Guid SessionID { get; protected set; }
-
-        public TcpClient TcpClient { get; set; }
-        public IPEndPoint EndPoint { get; protected set; }
-
         public bool isAuth = false;
-        public bool isKilled { get; set; } = false;
         private bool pinging = false;
         private long lastPingTime = 0;
-        private long lastReceiveTime = 0;
 
         private ILogger logger;
 
-        private ConcurrentQueue<Request> sendQueue = new ConcurrentQueue<Request>();
+        public Connection<Request> Connection;
+
 
         public Client(TcpClient tcpClient)
         {
-            TcpClient = tcpClient;
-            EndPoint = (IPEndPoint)TcpClient.Client.RemoteEndPoint;
-            SessionID = Guid.NewGuid();
-            lastReceiveTime = ChinoServer.CurrentTime;
-            logger = LogManager.CreateLogger<Client>(ToString(string.Empty));
+            Connection = new Connection<Request>(tcpClient, new JsonSerializer<Request>());
+            Connection.MidUpdate += Connection_MidUpdate;
+            Connection.Received += Connection_Received;
+            logger = LogManager.CreateLogger<Client>(Connection.ToString(string.Empty));
         }
 
-        public async Task Check(ChinoWorker worker)
+        private void Connection_Received(object sender, Request e)
         {
-            if (isKilled)
-            {
-                return;
-            }
+            handleIncoming(e);
+        }
 
-            long current = ChinoServer.CurrentTime;
-            long timeout = current - lastReceiveTime;
-            if (timeout > TimeoutSeconds)
-            {
-                Kill("Timed out");
-                return;
-            }
-            if (!TcpClient.Connected)
-            {
-                Kill("Disconnect");
-            }
-
-            // processOfflineMessage();
-            await receive();
+        private void Connection_MidUpdate(object sender, EventArgs e)
+        {
             ping();
-            await send();
         }
 
-        private async Task receive()
+        public async Task<bool> Check(ChinoWorker worker)
         {
-            if (isKilled)
-            {
-                return;
-            }
-
-            var stream = TcpClient.GetStream();
-            var str = "";
-            if (stream.CanRead)
-            {
-                byte[] buffer = new byte[4096];
-                var builder = new StringBuilder();
-                int toRead = 0;
-                try
-                {
-                    while (stream.DataAvailable)
-                    {
-                        toRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        builder.AppendFormat("{0}", Encoding.UTF8.GetString(buffer, 0, toRead));
-                    }
-                }
-                catch
-                {
-                    Kill("Disconnect");
-                }
-                
-                str = builder.ToString().Trim();
-                if (string.IsNullOrEmpty(str))
-                {
-                    return;
-                }
-                logger.LogInformation("Receive: {0}", str);
-                var data = JsonSerializer.Deserialize<Request>(str);
-                if (data != null)
-                {
-                    handleIncoming(data);
-                }
-            }
-        }
-
-        private async Task send()
-        {
-            if (isKilled)
-            {
-                return;
-            }
-
-            if (sendQueue.TryDequeue(out var request))
-            {
-                var token = request.GetToken();
-                request.Token = token;
-                request.SendTime = ChinoServer.CurrentTime;
-                var json = JsonSerializer.Serialize(request).Trim();
-                logger.LogInformation("Send: {0}", json);
-
-                if (!string.IsNullOrEmpty(json))
-                {
-                    var stream = TcpClient.GetStream();
-                    var writer = new StreamWriter(stream);
-                    if (stream.CanWrite)
-                    {
-                        try
-                        {
-                            await writer.WriteAsync(json + "\n");
-                            await writer.FlushAsync();
-                        }
-                        catch
-                        {
-                            Kill("Disconnect");
-                        }
-                    }
-                }
-            }
+            return await Connection.Update();
         }
 
         private void authenticate(string uid, string password)
@@ -169,7 +71,7 @@ namespace ChinoIM.Server
 
         private void ping()
         {
-            long currentTime = ChinoServer.CurrentTime;
+            long currentTime = TimeService.CurrentTime;
             if (!pinging && (currentTime - lastPingTime > 30))
             {
                 sendPing();
@@ -184,20 +86,12 @@ namespace ChinoIM.Server
         private void sendPing()
         {
             pinging = true;
-            lastPingTime = ChinoServer.CurrentTime;
+            lastPingTime = TimeService.CurrentTime;
             sendRequest(RequestType.Ping, null);
-        }
-
-        public void Kill(String reason)
-        {
-            isKilled = true;
-            logger.LogInformation("{0} killed for {1}",ToString(), reason);
-            ClientManager.UnregisterClient(this);
         }
 
         private void handleIncoming(Request request)
         {
-            lastReceiveTime = ChinoServer.CurrentTime;
             if (!isAuth && (request.Type == RequestType.User_Login || request.Type == RequestType.User_Register))
             {
                 switch (request.Type)
@@ -221,7 +115,7 @@ namespace ChinoIM.Server
                         MessageService.SendMessage(User.UID, targetId, targetType, request["Content"].ToString(), bool.Parse(request["UseEscape"].ToString()));
                         break;
                     case RequestType.User_Logout:
-                        Kill("logout");
+                        Connection.Disconnect("logout");
                         break;
                     case RequestType.Pong:
                         pong();
@@ -240,7 +134,7 @@ namespace ChinoIM.Server
 
         private void sendRequest(RequestType type, IDictionary<string, object> payload)
         {
-            if ((!isAuth || isKilled) && type != RequestType.Ping && type != RequestType.User_LoginResult)
+            if ((!isAuth || Connection.IsConnected) && type != RequestType.Ping && type != RequestType.User_LoginResult)
             {
                 return;
             }
@@ -250,22 +144,9 @@ namespace ChinoIM.Server
                 Payload = payload,
                 Type = type
             };
-            sendQueue.Enqueue(request);
-        }
+            request.AddStamp();
 
-        public override string ToString()
-        {
-            return ToString("Client");
-        }
-
-        public string ToString(string prefix)
-        {
-            var baseStr = string.Format("{0}[{1} @ {2}:{3}]", prefix, SessionID, EndPoint.Address, EndPoint.Port);
-            if (User != null)
-            {
-                return string.Format("{0} {1}(2)", baseStr, User.Username, User.UID);
-            }
-            return baseStr;
+            Connection.SendRequest(request);
         }
     }
 }

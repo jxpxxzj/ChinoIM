@@ -1,8 +1,9 @@
 ﻿using ChinoIM.Common.Enums;
 using ChinoIM.Common.Helpers;
+using ChinoIM.Common.Serialization;
 using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 
 namespace ChinoIM.Common.Network
 {
@@ -35,9 +36,14 @@ namespace ChinoIM.Common.Network
             SendTime = TimeService.CurrentTime;
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        public void ReadFromStream(SerializationReader reader)
         {
-            
+            throw new NotImplementedException();
+        }
+
+        public void WriteToStream(SerializationWriter writer)
+        {
+            throw new NotImplementedException();
         }
 
         public object this[string key]

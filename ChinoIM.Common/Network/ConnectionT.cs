@@ -1,30 +1,29 @@
-﻿using System;
-using System.IO;
+﻿using ChinoIM.Common.Serialization;
+using System;
 using System.Net.Sockets;
-using System.Runtime.Serialization;
 
 namespace ChinoIM.Common.Network
 {
-    public class Connection<T> : Connection where T: ISerializable
+    public class Connection<T> : Connection where T : ISerializable
     {
-        public IFormatter Formatter { get; set; }
+        public ISerializer<T> Formatter { get; set; }
 
-        public Connection(TcpClient tcpClient, IFormatter formatter) : base(tcpClient)
+        public Connection(TcpClient tcpClient, ISerializer<T> formatter) : base(tcpClient)
         {
             init(formatter);
         }
 
-        public Connection(TcpClient tcpClient, int timeoutSeconds, IFormatter formatter) : base(tcpClient, timeoutSeconds)
+        public Connection(TcpClient tcpClient, int timeoutSeconds, ISerializer<T> formatter) : base(tcpClient, timeoutSeconds)
         {
             init(formatter);
         }
 
-        public Connection(TcpClient tcpClient, int timeoutSeconds, Guid sessionId, IFormatter formatter) : base(tcpClient, timeoutSeconds, sessionId)
+        public Connection(TcpClient tcpClient, int timeoutSeconds, Guid sessionId, ISerializer<T> formatter) : base(tcpClient, timeoutSeconds, sessionId)
         {
             init(formatter);
         }
 
-        protected void init(IFormatter formatter)
+        protected void init(ISerializer<T> formatter)
         {
             Formatter = formatter;
         }
@@ -33,30 +32,16 @@ namespace ChinoIM.Common.Network
 
         protected override void OnReceived(string request)
         {
-            using (var memStream = new MemoryStream())
-            {
-                var writer = new StreamWriter(memStream);
-                writer.Write(request);
-                writer.Flush();
-                var obj = (T)Formatter.Deserialize(memStream);
-                Received?.Invoke(this, obj);
-            }           
+            var obj = Formatter.Deserialize(request);
+            Received?.Invoke(this, obj);
         }
 
         public void SendRequest(T obj)
         {
             if (obj != null)
             {
-                using (var memStream = new MemoryStream())
-                {
-                    Formatter.Serialize(memStream, obj);
-                    memStream.Seek(0, SeekOrigin.Begin);
-                    using (var reader = new StreamReader(memStream))
-                    {
-                        var str = reader.ReadToEnd();
-                        SendRequest(str);
-                    }
-                }
+                var str = Formatter.Serialize(obj);
+                SendRequest(str);
             }
         }
     }

@@ -82,7 +82,7 @@ namespace ChinoIM.Client
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
 
-                connection = new Connection<Request>(tcpClient, new JsonFormatter<Request>());
+                connection = new Connection<Request>(tcpClient, new JsonSerializer<Request>());
                 connection.Received += Connection_Receive;
                 connection.Disconnected += Connection_Disconnected;
                 OnConnected();
@@ -150,7 +150,7 @@ namespace ChinoIM.Client
 
         private void sendRequest(RequestType type, IDictionary<string, object> payload = null)
         {
-            if ((!isAuth || !connection.isConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
+            if ((!isAuth || !connection.IsConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
             {
                 return;
             }
@@ -161,9 +161,7 @@ namespace ChinoIM.Client
                 Type = type
             };
 
-            var token = request.GetToken();
-            request.Token = token;
-            request.SendTime = TimeService.CurrentTime;
+            request.AddStamp();
 
             connection.SendRequest(request);
         }
