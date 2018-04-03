@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Server
 {
-    public class ChinoClient : Client<Request>
+    public class ChinoClient : Client<Request, ChinoClient>
     {
         public User User { get; set; }
 

@@ -5,10 +5,10 @@ using System.Net.Sockets;
 
 namespace ChinoIM.Common.Network
 {
-    public abstract class Client<T> where T : ISerializable
+    public abstract class Client<T, U> where T : ISerializable where U: Client<T,U>
     {
         public Connection<T> Connection { get; protected set; }
-        protected List<IncomingHandler<T>> IncomingHandlers;
+        protected List<IncomingHandler<T, U>> IncomingHandlers = new List<IncomingHandler<T, U>>();
 
         public event EventHandler Connected;
         public event EventHandler<Request> Receive;
@@ -76,11 +76,11 @@ namespace ChinoIM.Common.Network
             IncomingHandlers.FindAll(t => t.Test(request)).ForEach(t => t.HandleIncoming(request));
         }
 
-        public virtual void AddHandler(IncomingHandler<T> handler)
+        public virtual void AddHandler(IncomingHandler<T, U> handler)
         {
             IncomingHandlers.Add(handler);
         }
-        public virtual void RemoveHandler(Predicate<IncomingHandler<T>> predicate)
+        public virtual void RemoveHandler(Predicate<IncomingHandler<T, U>> predicate)
         {
             IncomingHandlers.RemoveAll(predicate);
         }

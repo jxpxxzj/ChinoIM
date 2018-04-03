@@ -1,24 +1,35 @@
-﻿using ChinoIM.Common.Serialization;
+﻿using ChinoIM.Common.Helpers;
+using ChinoIM.Common.Serialization;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace ChinoIM.Common.Network
 {
-    public abstract class IncomingHandler<T> where T : ISerializable
+    public abstract class IncomingHandler<T, U> where T : ISerializable where U : Client<T, U>
     {
-        public Client<T> Client { get; protected set; }
+        public U Client { get; protected set; }
         public Predicate<T> Condition { get; protected set; }
 
-        public IncomingHandler(Client<T> client, Predicate<T> condition)
+        protected ILogger logger;
+
+        public IncomingHandler(U client) : this(client, null) { }
+
+        public IncomingHandler(U client, Predicate<T> condition)
         {
             Client = client;
-            Condition = condition; 
+            Condition = condition;
+            logger = LogManager.CreateLogger(GetType());
         }
 
         public bool Test(T obj)
         {
+            if (Condition == null)
+            {
+                logger.LogError("Condition is null, returing false.");
+            }
             return Condition.Invoke(obj);
         }
 
-        public abstract bool HandleIncoming(T request);
+        public abstract void HandleIncoming(T request);
     }
 }

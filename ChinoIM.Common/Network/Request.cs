@@ -15,6 +15,20 @@ namespace ChinoIM.Common.Network
         public long SendTime { get; set; }
         public IDictionary<string, object> Payload { get; set; } = new Dictionary<string, object>();
 
+        public Request()
+        {
+
+        }
+        public Request(RequestType type)
+        {
+            Type = type;
+        }
+        public Request(RequestType type, IDictionary<string, object> payload)
+        {
+            Type = type;
+            Payload = payload;
+        }
+
         private string getPayloadJson()
         {
             return JsonSerializer.Serialize(Payload);

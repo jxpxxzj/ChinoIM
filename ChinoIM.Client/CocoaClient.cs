@@ -1,4 +1,5 @@
-﻿using ChinoIM.Common.Enums;
+﻿using ChinoIM.Client.Handler;
+using ChinoIM.Common.Enums;
 using ChinoIM.Common.Helpers;
 using ChinoIM.Common.Network;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Client
 {
-    public class CocoaClient : Client<Request>
+    public class CocoaClient : Client<Request, CocoaClient>
     {
         private ILogger logger = LogManager.CreateLogger<CocoaClient>();
 
@@ -18,7 +19,7 @@ namespace ChinoIM.Client
         public static IPAddress ServerAddressV4 = IPAddress.Loopback;
         public static int Port = 6163;
 
-        private bool isAuth;
+        internal bool isAuth;
 
         public CocoaClient(IPAddress serverV4, IPAddress serverV6, int port)
         {
@@ -63,21 +64,27 @@ namespace ChinoIM.Client
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
                 SetConnection(tcpClient, new JsonSerializer<Request>());
+                registerHandler();
             }
+        }
+
+        private void registerHandler()
+        {
+            AddHandler(new PingHandler(this));
+            AddHandler(new UserLoginResultHandler(this));
         }
 
         private async void mainLoop()
         {
             while (true)
             {
-                await Connection.Update();
+                var result = await Connection.Update();
+                if (!result)
+                {
+                    break;
+                }
                 Thread.Sleep(200);
             }
-        }
-
-        private void pong()
-        {
-            sendRequest(RequestType.Pong);
         }
 
         public override void HandleIncoming(Request request)
@@ -87,19 +94,8 @@ namespace ChinoIM.Client
                 logger.LogWarning("Client not login, ignore request");
                 return;
             }
-            switch (request.Type)
-            {
-                case RequestType.Ping:
-                    pong();
-                    break;
-                case RequestType.User_LoginResult:
-                    if (long.Parse(request["result"].ToString()) > 0)
-                    {
-                        logger.LogInformation("Login success");
-                        isAuth = true;
-                    }
-                    break;
-            }
+
+            ProcessHandler(request);
 
             if (request.Type != RequestType.Pong)
             {
@@ -111,11 +107,11 @@ namespace ChinoIM.Client
         {
             if (request != null)
             {
-                sendRequest(request.Type, request.Payload);
+                SendRequest(request.Type, request.Payload);
             }
         }
 
-        private void sendRequest(RequestType type, IDictionary<string, object> payload = null)
+        public void SendRequest(RequestType type, IDictionary<string, object> payload = null)
         {
             if ((!isAuth || !Connection.IsConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
             {
