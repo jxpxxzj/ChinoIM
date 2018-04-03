@@ -17,4 +17,8 @@
     <ProjectReference Include="..\ChinoIM.Common\ChinoIM.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Handler\Request\" />
+  </ItemGroup>
+
 </Project>

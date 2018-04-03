@@ -82,7 +82,7 @@ namespace ChinoIM.Server
                 if (tcpClient != null)
                 {
                     logger.LogInformation("TcpClient accepted " + appendix);
-                    var client = new Client(tcpClient);
+                    var client = new ChinoClient(tcpClient);
                     ClientManager.RegisterClient(client);
                 }
             }

@@ -7,13 +7,13 @@ namespace ChinoIM.Server
 {
     public class ClientManager
     {
-        private static ConcurrentQueue<Client> clientsForProcessing = new ConcurrentQueue<Client>();
-        private static List<Client> clients = new List<Client>();
+        private static ConcurrentQueue<ChinoClient> clientsForProcessing = new ConcurrentQueue<ChinoClient>();
+        private static List<ChinoClient> clients = new List<ChinoClient>();
         private static object lockClientList = new object();
 
         private static ILogger logger = LogManager.CreateLogger<ClientManager>();
 
-        public static List<Client> GetClients()
+        public static List<ChinoClient> GetClients()
         {
             lock(lockClientList)
             {
@@ -26,13 +26,13 @@ namespace ChinoIM.Server
             return GetClients().Count;
         }
 
-        public static Client FindClient(long uid)
+        public static ChinoClient FindClient(long uid)
         {
             var clients = GetClients();
             return clients.Find(t => t.User.UID == uid);
         }
 
-        public static Client GetClientForProcessing()
+        public static ChinoClient GetClientForProcessing()
         {
             if (clientsForProcessing.TryDequeue(out var client))
             {
@@ -41,12 +41,12 @@ namespace ChinoIM.Server
             return null;
         }
 
-        public static void AddClientForProcessing(Client c)
+        public static void AddClientForProcessing(ChinoClient c)
         {
             clientsForProcessing.Enqueue(c);
         }
 
-        public static void RegisterClient(Client c)
+        public static void RegisterClient(ChinoClient c)
         {
             lock (lockClientList)
             {
@@ -64,7 +64,7 @@ namespace ChinoIM.Server
             }
         }
         
-        public static void UnregisterClient(Client c)
+        public static void UnregisterClient(ChinoClient c)
         {
             lock (lockClientList)
             {

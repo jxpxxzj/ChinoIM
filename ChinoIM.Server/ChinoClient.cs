@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Server
 {
-    public class Client
+    public class ChinoClient : Client<Request>
     {
         public User User { get; set; }
 
@@ -21,20 +21,12 @@ namespace ChinoIM.Server
 
         private ILogger logger;
 
-        public Connection<Request> Connection;
 
-
-        public Client(TcpClient tcpClient)
+        public ChinoClient(TcpClient tcpClient)
         {
-            Connection = new Connection<Request>(tcpClient, new JsonSerializer<Request>());
+            SetConnection(tcpClient, new JsonSerializer<Request>());
             Connection.MidUpdate += Connection_MidUpdate;
-            Connection.Received += Connection_Received;
-            logger = LogManager.CreateLogger<Client>(Connection.ToString(string.Empty));
-        }
-
-        private void Connection_Received(object sender, Request e)
-        {
-            handleIncoming(e);
+            logger = LogManager.CreateLogger<ChinoClient>(Connection.ToString(string.Empty));
         }
 
         private void Connection_MidUpdate(object sender, EventArgs e)
@@ -90,7 +82,7 @@ namespace ChinoIM.Server
             sendRequest(RequestType.Ping, null);
         }
 
-        private void handleIncoming(Request request)
+        public override void HandleIncoming(Request request)
         {
             if (!isAuth && (request.Type == RequestType.User_Login || request.Type == RequestType.User_Register))
             {
@@ -124,7 +116,7 @@ namespace ChinoIM.Server
             }
         }
 
-        public void SendRequest(Request request)
+        public override void SendRequest(Request request)
         {
             if (request != null)
             {
@@ -146,7 +138,7 @@ namespace ChinoIM.Server
             };
             request.AddStamp();
 
-            Connection.SendRequest(request);
+            base.SendRequest(request);
         }
     }
 }

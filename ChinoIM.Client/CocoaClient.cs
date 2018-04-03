@@ -2,7 +2,6 @@
 using ChinoIM.Common.Helpers;
 using ChinoIM.Common.Network;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ChinoIM.Client
 {
-    public class CocoaClient
+    public class CocoaClient : Client<Request>
     {
         private ILogger logger = LogManager.CreateLogger<CocoaClient>();
 
@@ -20,24 +19,6 @@ namespace ChinoIM.Client
         public static int Port = 6163;
 
         private bool isAuth;
-
-        private Connection<Request> connection;
-
-        public event EventHandler Connected;
-        public event EventHandler<Request> Receive;
-        public event EventHandler<string> Disconnected;
-        protected virtual void OnConnected()
-        {
-            Connected?.Invoke(this, EventArgs.Empty);
-        }
-        protected virtual void OnReceive(Request e)
-        {
-            Receive?.Invoke(this, e);
-        }
-        protected virtual void OnDisconnected(string reason)
-        {
-            Disconnected?.Invoke(this, reason);
-        }
 
         public CocoaClient(IPAddress serverV4, IPAddress serverV6, int port)
         {
@@ -53,7 +34,7 @@ namespace ChinoIM.Client
 
         ~CocoaClient()
         {
-            connection.Disconnect();
+            Connection.Disconnect();
         }
 
 
@@ -81,29 +62,15 @@ namespace ChinoIM.Client
             if (server != null && tcpClient != null)
             {
                 logger.LogInformation("Connected to {0}:{1}", server.ToString(), port);
-
-                connection = new Connection<Request>(tcpClient, new JsonSerializer<Request>());
-                connection.Received += Connection_Receive;
-                connection.Disconnected += Connection_Disconnected;
-                OnConnected();
+                SetConnection(tcpClient, new JsonSerializer<Request>());
             }
-        }
-
-        private void Connection_Disconnected(object sender, string e)
-        {
-            OnDisconnected(e);
-        }
-
-        private void Connection_Receive(object sender, Request e)
-        {
-            handleIncoming(e);
         }
 
         private async void mainLoop()
         {
             while (true)
             {
-                await connection.Update();
+                await Connection.Update();
                 Thread.Sleep(200);
             }
         }
@@ -113,7 +80,7 @@ namespace ChinoIM.Client
             sendRequest(RequestType.Pong);
         }
 
-        private void handleIncoming(Request request)
+        public override void HandleIncoming(Request request)
         {
             if (!isAuth && request.Type != RequestType.User_LoginResult)
             {
@@ -140,7 +107,7 @@ namespace ChinoIM.Client
             }
         }
 
-        public void SendRequest(Request request)
+        public override void SendRequest(Request request)
         {
             if (request != null)
             {
@@ -150,7 +117,7 @@ namespace ChinoIM.Client
 
         private void sendRequest(RequestType type, IDictionary<string, object> payload = null)
         {
-            if ((!isAuth || !connection.IsConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
+            if ((!isAuth || !Connection.IsConnected) && type != RequestType.User_Login && type != RequestType.User_Register)
             {
                 return;
             }
@@ -163,7 +130,7 @@ namespace ChinoIM.Client
 
             request.AddStamp();
 
-            connection.SendRequest(request);
+            base.SendRequest(request);
         }
     }
 }
