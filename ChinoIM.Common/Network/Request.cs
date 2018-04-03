@@ -2,7 +2,6 @@
 using ChinoIM.Common.Helpers;
 using ChinoIM.Common.Serialization;
 using Newtonsoft.Json.Converters;
-using System;
 using System.Collections.Generic;
 
 namespace ChinoIM.Common.Network
@@ -11,8 +10,8 @@ namespace ChinoIM.Common.Network
     {
         [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
         public RequestType Type { get; set; }
-        public string Token { get; set; }
-        public long SendTime { get; set; }
+        public string Token { get; protected set; }
+        public long SendTime { get; protected set; }
         public IDictionary<string, object> Payload { get; set; } = new Dictionary<string, object>();
 
         public Request()
@@ -52,12 +51,14 @@ namespace ChinoIM.Common.Network
 
         public void ReadFromStream(SerializationReader reader)
         {
-            throw new NotImplementedException();
+            Type = (RequestType)reader.ReadInt32();
+            Payload = reader.ReadDictionary<string, object>();
         }
 
         public void WriteToStream(SerializationWriter writer)
         {
-            throw new NotImplementedException();
+            writer.Write((int)Type);
+            writer.Write(Payload);
         }
 
         public object this[string key]

@@ -63,7 +63,7 @@ namespace ChinoIM.Common.Serialization
             if (count < 0) return null;
             IList<T> d = new List<T>(count);
 
-            SerializationReader sr = new SerializationReader(BaseStream);
+            var sr = new SerializationReader(BaseStream);
 
             for (int i = 0; i < count; i++)
             {

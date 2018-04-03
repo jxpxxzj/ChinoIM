@@ -100,7 +100,7 @@ namespace ChinoIM.Common.Serialization
             else
             {
                 Write(d.Count);
-                foreach (KeyValuePair<T, U> kvp in d)
+                foreach (var kvp in d)
                 {
                     WriteObject(kvp.Key);
                     WriteObject(kvp.Value);
