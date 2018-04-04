@@ -29,7 +29,7 @@ namespace ChinoIM.Server
 
         public static ChinoClient FindClient(long uid)
         {
-            var clients = GetClients();
+            var clients = GetClients(); 
             foreach(var t in clients)
             {
                 if (t is ChinoClient client)
@@ -75,7 +75,7 @@ namespace ChinoIM.Server
             }
         }
         
-        public static void UnregisterClient(ChinoClient c)
+        public static void UnregisterClient(IUpdateable c)
         {
             lock (lockClientList)
             {

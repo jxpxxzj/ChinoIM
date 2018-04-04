@@ -39,7 +39,7 @@ namespace ChinoIM.Server
                 string msg = string.Empty;
                 try
                 {
-                    success = await client.Check(this);
+                    success = await client.Update();
                 }
                 catch (Exception e)
                 {
