@@ -230,6 +230,7 @@ namespace ChinoIM.Common.Network
 
         public void Disconnect(string reason = null)
         {
+            if (!IsConnected) return;
             TcpClient.Close();
             if (string.IsNullOrEmpty(reason))
             {

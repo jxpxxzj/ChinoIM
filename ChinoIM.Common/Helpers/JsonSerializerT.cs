@@ -2,7 +2,7 @@
 
 namespace ChinoIM.Common.Helpers
 {
-    public class JsonSerializer<T> : ISerializer<T>
+    public class JsonSerializer<T> : ISerializer<T> where T: ISerializable
     {
         public T Deserialize(string data)
         {

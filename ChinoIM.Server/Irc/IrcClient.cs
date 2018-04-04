@@ -50,6 +50,9 @@ namespace ChinoIM.Server.Irc
         private void registerHandler()
         {
             pingPongHandler = new PingPongHandler(this);
+            AddHandler(pingPongHandler);
+            AddHandler(new NickHandler(this));
+            AddHandler(new QuitHandler(this));
         }
         protected override void Connection_Received(object sender, IrcCommand e)
         {
@@ -67,7 +70,7 @@ namespace ChinoIM.Server.Irc
                     command.ParseType();
                     HandleIncoming(command);
                 }
-            }      
+            }
         }
 
         public override void HandleIncoming(IrcCommand request)
