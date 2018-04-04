@@ -19,11 +19,12 @@ namespace ChinoIM.Server
         public static int WorkerCount = 4;
         public static string Hostname = "";
 
-        private ClientListener listenerV4;
-        private ClientListener listenerV6;
+        private TcpClientListener listenerV4;
+        private TcpClientListener listenerV6;
 
         public static bool AllowIrcConnection = true;
-        private ClientListener listenerIrc;
+        private TcpClientListener listenerIrcV4;
+        private TcpClientListener listenerIrcV6;
         public static int PortIrc = 6667;
 
         private List<ChinoWorker> workers = new List<ChinoWorker>();
@@ -49,17 +50,21 @@ namespace ChinoIM.Server
 
             if (NetworkUtil.IsSupportIPv4)
             {
-                listenerV4 = new ClientListener(ipAddressV4, port, "IPv4");
+                listenerV4 = new TcpClientListener(ipAddressV4, port, "IPv4");
 
                 if (allowIrcConnection)
                 {
-                    listenerIrc = new ClientListener(ipAddressV4, portIrc, "IPv4 IRC");
+                    listenerIrcV4 = new TcpClientListener(ipAddressV4, portIrc, "IPv4 IRC");
                 }
             }
 
             if (NetworkUtil.IsSupportIPv6)
             {
-                listenerV6 = new ClientListener(ipAddressV6, port, "IPv6");
+                listenerV6 = new TcpClientListener(ipAddressV6, port, "IPv6");
+                if (allowIrcConnection)
+                {
+                    listenerIrcV6 = new TcpClientListener(ipAddressV6, portIrc, "IPv6 IRC");
+                }
             }
         }
 
@@ -75,10 +80,15 @@ namespace ChinoIM.Server
                 listenerV6.TcpClientAccepted += Listener_TcpClientAccepted;
                 listenerV6.Start();
             }
-            if (listenerIrc != null)
+            if (listenerIrcV4 != null)
             {
-                listenerIrc.TcpClientAccepted += ListenerIrc_TcpClientAccepted;
-                listenerIrc.Start();
+                listenerIrcV4.TcpClientAccepted += ListenerIrc_TcpClientAccepted;
+                listenerIrcV4.Start();
+            }
+            if (listenerIrcV6 != null)
+            {
+                listenerIrcV6.TcpClientAccepted += ListenerIrc_TcpClientAccepted;
+                listenerIrcV6.Start();
             }
             mainLoop();
         }

@@ -2,7 +2,7 @@
 using ChinoIM.Common.Helpers;
 using ChinoIM.Common.Models;
 using ChinoIM.Common.Network;
-using ChinoIM.Server.Services;
+using ChinoIM.Server.Handler;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -15,10 +15,10 @@ namespace ChinoIM.Server
         public User User { get; set; }
 
         public bool isAuth = false;
-        private bool pinging = false;
-        private long lastPingTime = 0;
 
         private ILogger logger;
+
+        private PongHandler pongHandler;
 
 
         public ChinoClient(TcpClient tcpClient)
@@ -26,11 +26,20 @@ namespace ChinoIM.Server
             SetConnection(tcpClient, new JsonSerializer<Request>());
             Connection.MidUpdate += Connection_MidUpdate;
             logger = LogManager.CreateLogger<ChinoClient>(Connection.ToString(string.Empty));
+            registerHandler();
+        }
+
+        private void registerHandler()
+        {
+            pongHandler = new PongHandler(this);
+            AddHandler(pongHandler);
+            AddHandler(new UserLogoutHandler(this));
+            AddHandler(new MessageHandler(this));
         }
 
         private void Connection_MidUpdate(object sender, EventArgs e)
         {
-            ping();
+            pongHandler.Ping();
         }
 
         private void authenticate(string uid, string password)
@@ -45,7 +54,7 @@ namespace ChinoIM.Server
                 {
                     UID = long.Parse(uid),
                 };
-                pong();
+                pongHandler.Pong();
             }
 
             var dict = new Dictionary<string, object>()
@@ -53,27 +62,6 @@ namespace ChinoIM.Server
                 { "result", isAuth ? uid : 0.ToString() }
             };
             sendRequest(RequestType.User_LoginResult, dict);
-        }
-
-        private void ping()
-        {
-            long currentTime = TimeService.CurrentTime;
-            if (!pinging && (currentTime - lastPingTime > 30))
-            {
-                sendPing();
-            }
-        }
-
-        private void pong()
-        {
-            pinging = false;
-        }
-
-        private void sendPing()
-        {
-            pinging = true;
-            lastPingTime = TimeService.CurrentTime;
-            sendRequest(RequestType.Ping, null);
         }
 
         public override void HandleIncoming(Request request)
@@ -93,20 +81,7 @@ namespace ChinoIM.Server
             }
             if (isAuth)
             {
-                switch (request.Type)
-                {
-                    case RequestType.Message:
-                        long targetId = long.Parse(request["Target"].ToString());
-                        var targetType = Enum.Parse<EndpointType>(request["TargetType"].ToString());
-                        MessageService.SendMessage(User.UID, targetId, targetType, request["Content"].ToString(), bool.Parse(request["UseEscape"].ToString()));
-                        break;
-                    case RequestType.User_Logout:
-                        Connection.Disconnect("logout");
-                        break;
-                    case RequestType.Pong:
-                        pong();
-                        break;
-                }
+                ProcessHandler(request);
             }
         }
 
