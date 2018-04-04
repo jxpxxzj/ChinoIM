@@ -12,14 +12,14 @@ namespace ChinoIM.Common.Network
         protected List<IncomingHandler<T, U>> IncomingHandlers = new List<IncomingHandler<T, U>>();
 
         public event EventHandler Connected;
-        public event EventHandler<Request> Receive;
+        public event EventHandler<T> Receive;
         public event EventHandler<string> Disconnected;
 
         protected virtual void OnConnected()
         {
             Connected?.Invoke(this, EventArgs.Empty);
         }
-        protected virtual void OnReceive(Request e)
+        protected virtual void OnReceive(T e)
         {
             Receive?.Invoke(this, e);
         }

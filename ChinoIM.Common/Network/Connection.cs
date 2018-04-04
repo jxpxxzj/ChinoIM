@@ -112,7 +112,12 @@ namespace ChinoIM.Common.Network
                 return false;
             }
 
-            checkTimeout();
+            var isTimedout = checkTimeout();
+            if(isTimedout)
+            {
+                Disconnect("Timed out");
+                return false;
+            }
 
             OnBeforeUpdate();
             await receive();
@@ -122,16 +127,16 @@ namespace ChinoIM.Common.Network
             return true;
         }
 
-        private void checkTimeout()
+        private bool checkTimeout()
         {
             long current = TimeService.CurrentTime;
             long timeout = current - lastReceiveTime;
             LastReceiveTimeAgo = timeout;
             if (timeout > TimeoutLimit)
             {
-                Disconnect("Timed out");
-                return;
+                return true;
             }
+            return false;
         }
 
         private async Task receive()

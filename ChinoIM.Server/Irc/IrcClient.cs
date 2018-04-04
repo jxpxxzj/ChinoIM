@@ -28,13 +28,32 @@ namespace ChinoIM.Server.Irc
         public IrcClient(TcpClient tcpClient)
         {
             SetConnection(tcpClient, new IrcSerializer());
-            logger = LogManager.CreateLogger<IrcClient>(ToString());
+            logger = LogManager.CreateLogger<IrcClient>(Connection.ToString(string.Empty));
             Connection.TimeoutLimit = 120;
+        }
+
+        protected override void Connection_Received(object sender, IrcCommand e)
+        {
+            if (!Connection.IsConnected)
+            {
+                return;
+            }
+            var str = e.Command;
+            var split = str.Split('\n');
+            foreach (var line in split)
+            {
+                if (line.Length > 0)
+                {
+                    var command = new IrcCommand(line);
+                    command.ParseType();
+                    HandleIncoming(command);
+                }
+            }      
         }
 
         public override void HandleIncoming(IrcCommand request)
         {
-            logger.LogInformation(request.Command);
+            logger.LogInformation(request.Type.ToString());
         }
 
         private void SendIrcRaw(IrcCommands command, string message, params object[] args)

@@ -7,23 +7,23 @@ namespace ChinoIM.Server.Services
 {
     public class MessageService
     {
-        public static void SendMessage(long sender, long target, EndpointType targetType, string content, bool useEscape = false)
+        public static void SendMessage(long sender, long target, MessageEndPoint targetType, string content, bool useEscape = false)
         {
-            long container = targetType == EndpointType.User ? -1 : target;
+            long container = targetType == MessageEndPoint.User ? -1 : target;
             var containerType = targetType;
 
             var message = new Message()
             {
                 Sender = sender,
                 Target = target,
-                TargetType = EndpointType.User,
+                TargetType = MessageEndPoint.User,
                 Container = container,
                 ContainerType = containerType,
                 UseEscape = useEscape,
                 Content = content
             };
 
-            if (containerType == EndpointType.User)
+            if (containerType == MessageEndPoint.User)
             {
                 var client = ClientManager.FindClient(target);
                 var request = new Request()

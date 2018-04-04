@@ -1,6 +1,6 @@
 ﻿namespace ChinoIM.Common.Enums
 {
-    public enum EndpointType
+    public enum MessageEndPoint
     {
         User,
         Channel,
