@@ -1,4 +1,5 @@
 ﻿using ChinoIM.Common.Helpers;
+using ChinoIM.Common.Network;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,13 +8,13 @@ namespace ChinoIM.Server
 {
     public class ClientManager
     {
-        private static ConcurrentQueue<ChinoClient> clientsForProcessing = new ConcurrentQueue<ChinoClient>();
-        private static List<ChinoClient> clients = new List<ChinoClient>();
+        private static ConcurrentQueue<IUpdateable> clientsForProcessing = new ConcurrentQueue<IUpdateable>();
+        private static List<IUpdateable> clients = new List<IUpdateable>();
         private static object lockClientList = new object();
 
         private static ILogger logger = LogManager.CreateLogger<ClientManager>();
 
-        public static List<ChinoClient> GetClients()
+        public static List<IUpdateable> GetClients()
         {
             lock(lockClientList)
             {
@@ -29,10 +30,20 @@ namespace ChinoIM.Server
         public static ChinoClient FindClient(long uid)
         {
             var clients = GetClients();
-            return clients.Find(t => t.User.UID == uid);
+            foreach(var t in clients)
+            {
+                if (t is ChinoClient client)
+                {
+                    if (client.User.UID == uid)
+                    {
+                        return client;
+                    }
+                }
+            }
+            return null;
         }
 
-        public static ChinoClient GetClientForProcessing()
+        public static IUpdateable GetClientForProcessing()
         {
             if (clientsForProcessing.TryDequeue(out var client))
             {
@@ -41,12 +52,12 @@ namespace ChinoIM.Server
             return null;
         }
 
-        public static void AddClientForProcessing(ChinoClient c)
+        public static void AddClientForProcessing(IUpdateable c)
         {
             clientsForProcessing.Enqueue(c);
         }
 
-        public static void RegisterClient(ChinoClient c)
+        public static void RegisterClient(IUpdateable c)
         {
             lock (lockClientList)
             {

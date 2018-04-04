@@ -16,6 +16,7 @@ namespace ChinoIM.Server
         public static IPAddress IPAddressV4 = IPAddress.Any;
         public static IPAddress IPAddressV6 = IPAddress.IPv6Any;
         public static int WorkerCount = 4;
+        public static string Hostname = "";
 
         private TcpListener listenerV4;
         private TcpListener listenerV6;

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 
 namespace ChinoIM.Server
 {
@@ -32,11 +31,6 @@ namespace ChinoIM.Server
         private void Connection_MidUpdate(object sender, EventArgs e)
         {
             ping();
-        }
-
-        public async Task<bool> Check(ChinoWorker worker)
-        {
-            return await Connection.Update();
         }
 
         private void authenticate(string uid, string password)

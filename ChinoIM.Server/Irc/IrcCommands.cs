@@ -1,4 +1,4 @@
-﻿namespace ChinoIM.Common.Enums
+﻿namespace ChinoIM.Server.Irc
 {
     public enum IrcCommands
     {

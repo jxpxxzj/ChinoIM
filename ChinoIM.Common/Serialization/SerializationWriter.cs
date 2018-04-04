@@ -244,7 +244,7 @@ namespace ChinoIM.Common.Serialization
             }
         }
 
-        internal void WriteUTF8(string str)
+        public void WriteUTF8(string str)
         {
             WriteRawBytes(Encoding.UTF8.GetBytes(str));
         }

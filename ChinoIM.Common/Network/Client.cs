@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace ChinoIM.Common.Network
 {
-    public abstract class Client<T, U> where T : ISerializable where U: Client<T,U>
+    public abstract class Client<T, U> : IUpdateable where T : ISerializable where U: Client<T,U>
     {
         public Connection<T> Connection { get; protected set; }
         protected List<IncomingHandler<T, U>> IncomingHandlers = new List<IncomingHandler<T, U>>();
@@ -83,6 +84,11 @@ namespace ChinoIM.Common.Network
         public virtual void RemoveHandler(Predicate<IncomingHandler<T, U>> predicate)
         {
             IncomingHandlers.RemoveAll(predicate);
+        }
+
+        public virtual async Task<bool> Update()
+        {
+            return await Connection.Update();
         }
     }
 }

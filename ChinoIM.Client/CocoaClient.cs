@@ -27,7 +27,7 @@ namespace ChinoIM.Client
             {
                 logger.LogInformation("Connecting...");
                 await Connect(serverV4, serverV6, port);
-                mainLoop();
+                await Update();
             });
         }
 
@@ -74,14 +74,14 @@ namespace ChinoIM.Client
             AddHandler(new UserLoginResultHandler(this));
         }
 
-        private async void mainLoop()
+        public override async Task<bool> Update()
         {
             while (true)
             {
                 var result = await Connection.Update();
                 if (!result)
                 {
-                    break;
+                    return result;
                 }
                 Thread.Sleep(200);
             }

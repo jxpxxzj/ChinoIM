@@ -30,6 +30,12 @@ namespace ChinoIM.Common.Serialization
             return base.ReadString();
         }
 
+        public string ReadUTF8()
+        {
+            var bytes = ReadByteArray();
+            return Encoding.UTF8.GetString(bytes);
+        }
+
         /// <summary> Reads a byte array from the buffer, handling nulls and the array length. </summary>
         public byte[] ReadByteArray()
         {
