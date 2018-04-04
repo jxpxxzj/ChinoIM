@@ -41,7 +41,7 @@ namespace ChinoIM.Server.Services
                 // get all user in channel or group
                 // foreach user: send message
             }
-           
+
         }
     }
 }

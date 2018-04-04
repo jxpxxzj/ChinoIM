@@ -39,7 +39,13 @@ namespace ChinoIM.Server
                 string msg = string.Empty;
                 try
                 {
+                    long before = TimeService.CurrentTime;
                     success = await client.Update();
+                    long after = TimeService.CurrentTime;
+                    if (after - before > 100 && client is ChinoClient c)
+                    {
+                        logger.LogWarning("Slow client: {0}", c.ToString());
+                    }
                 }
                 catch (Exception e)
                 {
@@ -53,7 +59,7 @@ namespace ChinoIM.Server
                     ClientManager.UnregisterClient(client);
                     return;
                 }
-                
+
                 ClientManager.AddClientForProcessing(client);
                 return;
             }

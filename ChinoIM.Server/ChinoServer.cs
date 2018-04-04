@@ -1,4 +1,5 @@
 ﻿using ChinoIM.Common.Helpers;
+using ChinoIM.Server.Irc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -18,8 +19,13 @@ namespace ChinoIM.Server
         public static int WorkerCount = 4;
         public static string Hostname = "";
 
-        private TcpListener listenerV4;
-        private TcpListener listenerV6;
+        private ClientListener listenerV4;
+        private ClientListener listenerV6;
+
+        public static bool AllowIrcConnection = true;
+        private ClientListener listenerIrc;
+        public static int PortIrc = 6667;
+
         private List<ChinoWorker> workers = new List<ChinoWorker>();
         private ILogger logger = LogManager.CreateLogger<ChinoServer>();
 
@@ -27,12 +33,12 @@ namespace ChinoIM.Server
         private Stopwatch timer = new Stopwatch();
         // internal static ConfigManager Config;
 
-        public ChinoServer() : this(IPAddressV4, IPAddressV6, Port)
+        public ChinoServer() : this(IPAddressV4, IPAddressV6, Port, AllowIrcConnection, PortIrc)
         {
 
         }
 
-        public ChinoServer(IPAddress ipAddressV4, IPAddress ipAddressV6, int port)
+        public ChinoServer(IPAddress ipAddressV4, IPAddress ipAddressV6, int port, bool allowIrcConnection, int portIrc)
         {
             timer.Start();
             for (var i = 0; i < WorkerCount; i++)
@@ -43,14 +49,17 @@ namespace ChinoIM.Server
 
             if (NetworkUtil.IsSupportIPv4)
             {
-                listenerV4 = new TcpListener(ipAddressV4, port);
-                listenerV4.Start();
+                listenerV4 = new ClientListener(ipAddressV4, port, "IPv4");
+
+                if (allowIrcConnection)
+                {
+                    listenerIrc = new ClientListener(ipAddressV4, portIrc, "IPv4 IRC");
+                }
             }
-            
+
             if (NetworkUtil.IsSupportIPv6)
             {
-                listenerV6 = new TcpListener(ipAddressV6, port);
-                listenerV6.Start();
+                listenerV6 = new ClientListener(ipAddressV6, port, "IPv6");
             }
         }
 
@@ -58,47 +67,32 @@ namespace ChinoIM.Server
         {
             if (listenerV4 != null)
             {
-                acceptConnectionV4();
+                listenerV4.TcpClientAccepted += Listener_TcpClientAccepted;
+                listenerV4.Start();
             }
             if (listenerV6 != null)
             {
-                acceptConnectionV6();
+                listenerV6.TcpClientAccepted += Listener_TcpClientAccepted;
+                listenerV6.Start();
+            }
+            if (listenerIrc != null)
+            {
+                listenerIrc.TcpClientAccepted += ListenerIrc_TcpClientAccepted;
+                listenerIrc.Start();
             }
             mainLoop();
         }
 
-        private async Task listeningConnection(TcpListener listener, string appendix = "")
+        private void ListenerIrc_TcpClientAccepted(object sender, TcpClient e)
         {
-            while(true)
-            {
-                TcpClient tcpClient = null;
-                try
-                {
-                    tcpClient = await listener.AcceptTcpClientAsync();
-                }
-                catch
-                {
-
-                }
-                if (tcpClient != null)
-                {
-                    logger.LogInformation("TcpClient accepted " + appendix);
-                    var client = new ChinoClient(tcpClient);
-                    ClientManager.RegisterClient(client);
-                }
-            }
+            var client = new IrcClient(e);
+            ClientManager.RegisterClient(client);
         }
 
-        private void acceptConnectionV4()
+        private void Listener_TcpClientAccepted(object sender, TcpClient e)
         {
-            logger.LogInformation("Listening on {0}:{1} for IPv4 connections...", IPAddressV4.ToString(), Port);
-            Task.Run(() => listeningConnection(listenerV4, "from IPv4"));
-        }
-
-        private void acceptConnectionV6()
-        {
-            logger.LogInformation("Listening on {0}:{1} for IPv6 connections...", IPAddressV6.ToString(), Port);
-            Task.Run(() => listeningConnection(listenerV6, "from IPv6"));
+            var client = new ChinoClient(e);
+            ClientManager.RegisterClient(client);
         }
 
         private long lastCntTime = 0;
@@ -106,7 +100,7 @@ namespace ChinoIM.Server
         private void mainLoop()
         {
             logger.LogInformation("Main loop is running...");
-            while(true)
+            while (true)
             {
                 long current = TimeService.CurrentTime;
                 foreach (var worker in workers)

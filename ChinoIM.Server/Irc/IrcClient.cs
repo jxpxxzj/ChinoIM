@@ -2,7 +2,6 @@
 using ChinoIM.Common.Network;
 using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 
 namespace ChinoIM.Server.Irc
 {
@@ -38,11 +37,6 @@ namespace ChinoIM.Server.Irc
             logger.LogInformation(request.Command);
         }
 
-        public async Task<bool> Check(ChinoWorker worker)
-        {
-            return await Connection.Update();
-        }
-
         private void SendIrcRaw(IrcCommands command, string message, params object[] args)
         {
             if (args.Length == 0)
@@ -55,6 +49,6 @@ namespace ChinoIM.Server.Irc
         {
             SendRequest(new IrcCommand(content));
         }
-        
+
     }
 }

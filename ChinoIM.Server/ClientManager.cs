@@ -16,7 +16,7 @@ namespace ChinoIM.Server
 
         public static List<IUpdateable> GetClients()
         {
-            lock(lockClientList)
+            lock (lockClientList)
             {
                 return clients;
             }
@@ -29,8 +29,8 @@ namespace ChinoIM.Server
 
         public static ChinoClient FindClient(long uid)
         {
-            var clients = GetClients(); 
-            foreach(var t in clients)
+            var clients = GetClients();
+            foreach (var t in clients)
             {
                 if (t is ChinoClient client)
                 {
@@ -63,18 +63,18 @@ namespace ChinoIM.Server
             {
                 // if (FindClient(c.User.UID) == null)
                 // {
-                    clients.Add(c);
-                    AddClientForProcessing(c);
-                    logger.LogInformation("{0} registered", c.ToString());
+                clients.Add(c);
+                AddClientForProcessing(c);
+                logger.LogInformation("{0} registered", c.ToString());
                 // }
                 // else
                 // {
-                    // logger.LogWarning("Client existed: {0}({1})", c.User.Username, c.User.UID);
+                // logger.LogWarning("Client existed: {0}({1})", c.User.Username, c.User.UID);
 
                 // }
             }
         }
-        
+
         public static void UnregisterClient(IUpdateable c)
         {
             lock (lockClientList)
