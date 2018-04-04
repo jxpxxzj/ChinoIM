@@ -1,5 +1,6 @@
 ﻿using ChinoIM.Common.Helpers;
 using ChinoIM.Common.Network;
+using ChinoIM.Server.Irc.Handler;
 using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
 
@@ -12,6 +13,7 @@ namespace ChinoIM.Server.Irc
         protected string username;
         public string UsernameUnderscored;
         public bool IsAdmin;
+        private PingPongHandler pingPongHandler;
         public virtual string Username
         {
             get => username;
@@ -29,9 +31,26 @@ namespace ChinoIM.Server.Irc
         {
             SetConnection(tcpClient, new IrcSerializer());
             logger = LogManager.CreateLogger<IrcClient>(Connection.ToString(string.Empty));
+            Connection.MidUpdate += Connection_MidUpdate;
             Connection.TimeoutLimit = 120;
+            registerHandler();
+            sendWelcomeText();
         }
 
+        private void sendWelcomeText()
+        {
+            SendRequest(IrcCommands.RPL_WELCOME, ":- Welcome to ChinoIM.");
+        }
+
+        private void Connection_MidUpdate(object sender, System.EventArgs e)
+        {
+            pingPongHandler.Ping();
+        }
+
+        private void registerHandler()
+        {
+            pingPongHandler = new PingPongHandler(this);
+        }
         protected override void Connection_Received(object sender, IrcCommand e)
         {
             if (!Connection.IsConnected)
@@ -53,20 +72,25 @@ namespace ChinoIM.Server.Irc
 
         public override void HandleIncoming(IrcCommand request)
         {
-            logger.LogInformation(request.Type.ToString());
+            ProcessHandler(request);
         }
 
-        private void SendIrcRaw(IrcCommands command, string message, params object[] args)
+        public void SendRequest(IrcCommands command, string message, params object[] args)
         {
             if (args.Length == 0)
-                SendIrcRaw(string.Format(":{0} {1:000} {2} {3}\r\n", ChinoServer.Hostname, (int)command, UsernameUnderscored, message));
+                SendRequest(string.Format(":{0} {1:000} {2} {3}\r\n", ChinoServer.Hostname, (int)command, UsernameUnderscored, message));
             else
-                SendIrcRaw(string.Format(":{0} {1:000} {2} {3}\r\n", ChinoServer.Hostname, (int)command, UsernameUnderscored, string.Format(message, args)));
+                SendRequest(string.Format(":{0} {1:000} {2} {3}\r\n", ChinoServer.Hostname, (int)command, UsernameUnderscored, string.Format(message, args)));
         }
 
-        private void SendIrcRaw(string content)
+        public void SendRequest(string content)
         {
             SendRequest(new IrcCommand(content));
+        }
+
+        public void SendRequest(string message, params object[] args)
+        {
+            SendRequest(string.Format(message, args));
         }
 
     }

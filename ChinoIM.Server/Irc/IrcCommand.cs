@@ -50,5 +50,7 @@ namespace ChinoIM.Server.Irc
         {
             writer.WriteUTF8(Command);
         }
+
+        public string this[int index] => Command.Split(' ')[index];
     }
 }
